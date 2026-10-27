@@ -1,0 +1,269 @@
+<Window x:Class="MechrevoWidget.ControlPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mechrevo Panel"
+        Width="272" SizeToContent="Height"
+        WindowStyle="SingleBorderWindow" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="Transparent" Topmost="True" SourceInitialized="OnSourceInitialized"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
+        FontFamily="Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI"
+        Deactivated="OnDeactivated" KeyDown="OnKeyDown" SizeChanged="OnSizeChanged">
+
+    <!-- 非分层窗口 + 去掉标题栏/边框:圆角、亚克力模糊、描边、阴影全部交给 DWM 画 -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" GlassFrameThickness="-1" ResizeBorderThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- 分段按钮:背景透明,选中态由下方滑块表现 -->
+        <Style x:Key="SegStyle" TargetType="Button">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#A6E2E8F0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Fill" CornerRadius="7" Background="{TemplateBinding Background}" />
+                            <Border x:Name="Hover" CornerRadius="7" Background="Transparent" />
+                            <ContentPresenter x:Name="Part" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              RenderTransformOrigin="0.5,0.5">
+                                <ContentPresenter.RenderTransform><ScaleTransform /></ContentPresenter.RenderTransform>
+                            </ContentPresenter>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Background" Value="#12FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Part" Property="RenderTransform">
+                                    <Setter.Value><ScaleTransform ScaleX="0.94" ScaleY="0.94" /></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SubSegStyle" TargetType="Button" BasedOn="{StaticResource SegStyle}">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style x:Key="MiniSwitch" TargetType="ToggleButton">
+            <Setter Property="Width" Value="30" /><Setter Property="Height" Value="16" />
+            <Setter Property="Focusable" Value="False" /><Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid Background="Transparent">
+                            <Border x:Name="Track" CornerRadius="8" Background="#33FFFFFF" />
+                            <Ellipse x:Name="Knob" Width="11" Height="11" Fill="#E5E7EB"
+                                     HorizontalAlignment="Left" Margin="2.5,0,0,0">
+                                <Ellipse.RenderTransform><TranslateTransform x:Name="KnobX" /></Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#34D399" />
+                                <Setter TargetName="Knob" Property="Fill" Value="#11141A" />
+                                <Trigger.EnterActions><BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="KnobX" Storyboard.TargetProperty="X" To="14" Duration="0:0:0.14">
+                                        <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard></BeginStoryboard></Trigger.EnterActions>
+                                <Trigger.ExitActions><BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="KnobX" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.14">
+                                        <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard></BeginStoryboard></Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 指标卡片 -->
+        <Style x:Key="Tile" TargetType="Border">
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Background" Value="#0FFFFFFF" />
+            <Setter Property="BorderBrush" Value="#0DFFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,8,10,9" />
+        </Style>
+        <Style x:Key="TileLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#80CBD5E1" />
+        </Style>
+        <Style x:Key="TileValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="19" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#F2FFFFFF" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            <Setter Property="Margin" Value="0,1,0,0" />
+            <Setter Property="Text" Value="—" />
+        </Style>
+        <Style x:Key="TileUnit" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="#80CBD5E1" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Margin" Value="3,0,0,4" />
+        </Style>
+        <Style x:Key="TileSub" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="#8CCBD5E1" />
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+        <!-- 细进度条轨道 -->
+        <Style x:Key="BarTrack" TargetType="Border">
+            <Setter Property="Height" Value="3" />
+            <Setter Property="CornerRadius" Value="1.5" />
+            <Setter Property="Background" Value="#14FFFFFF" />
+            <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+        <Style x:Key="BarFill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="1.5" />
+            <Setter Property="Background" Value="#5EEAD4" />
+            <Setter Property="RenderTransformOrigin" Value="0,0.5" />
+            <Setter Property="RenderTransform">
+                <Setter.Value><ScaleTransform ScaleX="0" /></Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- 背景是 DWM 亚克力(圆角 8px,系统描边+阴影);这里只叠一层很淡的暗色调,
+         CornerRadius 与 DWM 圆角一致,避免四角露出色差 -->
+    <Border x:Name="PanelCard" CornerRadius="8" Opacity="0" Background="#26000000">
+        <StackPanel Margin="12,11,12,10">
+
+            <!-- 标题行 -->
+            <Grid Margin="2,0,2,9">
+                <TextBlock Text="性能档位" FontSize="11" FontWeight="SemiBold" Foreground="#B3E2E8F0"
+                           VerticalAlignment="Center" />
+                <Border x:Name="StatusChip" HorizontalAlignment="Right" CornerRadius="8" Padding="7,1.5,8,2"
+                        Background="#14FFFFFF">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="ChipDot" Width="5" Height="5" Fill="#94A3B8"
+                                 VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <TextBlock x:Name="StatusText" Text="连接中…" FontSize="10" Foreground="#B3CBD5E1"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- 档位分段控件:轨道 + 滑块 + 四个按钮 -->
+            <Border CornerRadius="9" Background="#12FFFFFF" Padding="3">
+                <Grid x:Name="SegHost" SizeChanged="OnSegHostSizeChanged">
+                    <Border x:Name="SegIndicator" CornerRadius="7" HorizontalAlignment="Left"
+                            Background="#34D399" Opacity="0">
+                        <Border.RenderTransform><TranslateTransform x:Name="SegX" /></Border.RenderTransform>
+                    </Border>
+                    <UniformGrid Columns="4">
+                        <Button x:Name="BtnOffice" Tag="office" Click="OnModeClick" Style="{StaticResource SegStyle}" Content="办公" />
+                        <Button x:Name="BtnGaming" Tag="gaming" Click="OnModeClick" Style="{StaticResource SegStyle}" Content="均衡" />
+                        <Button x:Name="BtnTurbo" Tag="turbo" Click="OnModeClick" Style="{StaticResource SegStyle}" Content="狂暴" />
+                        <Button x:Name="BtnCustom" Tag="custom" Click="OnModeClick" Style="{StaticResource SegStyle}" Content="自定义" />
+                    </UniformGrid>
+                </Grid>
+            </Border>
+
+            <!-- 狂暴子模式 -->
+            <Border x:Name="SubModePanel" Margin="0,6,0,0" Visibility="Collapsed"
+                    CornerRadius="8" Background="#0CFFFFFF" Padding="3">
+                <UniformGrid Columns="2">
+                    <Button x:Name="BtnTurboSilent" Tag="silent" Click="OnTurboSubModeClick" Style="{StaticResource SubSegStyle}" Content="静音狂暴" />
+                    <Button x:Name="BtnTurboExtreme" Tag="extreme" Click="OnTurboSubModeClick" Style="{StaticResource SubSegStyle}" Content="高能狂暴" />
+                </UniformGrid>
+            </Border>
+
+            <!-- 指标卡片 2×2 -->
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition /><ColumnDefinition Width="6" /><ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition /><RowDefinition Height="6" /><RowDefinition />
+                </Grid.RowDefinitions>
+
+                <!-- CPU -->
+                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Text="CPU" Style="{StaticResource TileLabel}" />
+                        <TextBlock x:Name="CpuVal" Style="{StaticResource TileValue}" />
+                        <Border Style="{StaticResource BarTrack}">
+                            <Border x:Name="CpuBar" Style="{StaticResource BarFill}" />
+                        </Border>
+                        <TextBlock x:Name="CpuSub" Style="{StaticResource TileSub}" Text="PL1 —" />
+                    </StackPanel>
+                </Border>
+
+                <!-- GPU -->
+                <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Text="GPU" Style="{StaticResource TileLabel}" />
+                        <TextBlock x:Name="GpuVal" Style="{StaticResource TileValue}" />
+                        <Border Style="{StaticResource BarTrack}">
+                            <Border x:Name="GpuBar" Style="{StaticResource BarFill}" />
+                        </Border>
+                        <TextBlock x:Name="GpuSub" Style="{StaticResource TileSub}" Text="TGP —" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 风扇 -->
+                <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Text="风扇" Style="{StaticResource TileLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="FanVal" Style="{StaticResource TileValue}" />
+                            <TextBlock Text="rpm" Style="{StaticResource TileUnit}" />
+                        </StackPanel>
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition /><ColumnDefinition Width="4" /><ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource BarTrack}" Margin="0">
+                                <Border x:Name="Fan1Bar" Style="{StaticResource BarFill}" Background="#93C5FD" />
+                            </Border>
+                            <Border Grid.Column="2" Style="{StaticResource BarTrack}" Margin="0">
+                                <Border x:Name="Fan2Bar" Style="{StaticResource BarFill}" Background="#93C5FD" />
+                            </Border>
+                        </Grid>
+                        <TextBlock x:Name="FanSub" Style="{StaticResource TileSub}" Text="占空比 —" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 电池 -->
+                <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource Tile}">
+                    <StackPanel>
+                        <TextBlock Text="电池" Style="{StaticResource TileLabel}" />
+                        <TextBlock x:Name="BattVal" Style="{StaticResource TileValue}" />
+                        <Border Style="{StaticResource BarTrack}">
+                            <Border x:Name="BattBar" Style="{StaticResource BarFill}" Background="#86EFAC" />
+                        </Border>
+                        <TextBlock x:Name="BattSub" Style="{StaticResource TileSub}" Text="循环 —" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- EC 不可读提示 -->
+            <TextBlock x:Name="EcHint" Visibility="Collapsed" Margin="2,8,2,0" FontSize="10" TextWrapping="Wrap"
+                       Foreground="#FBBF24" Text="无法读取 EC(需以管理员身份运行)" />
+
+            <!-- 底部:开机自启 -->
+            <Grid Margin="2,10,2,0">
+                <TextBlock Text="开机自启" FontSize="10.5" Foreground="#8CCBD5E1" VerticalAlignment="Center" />
+                <ToggleButton x:Name="AutoStartToggle" HorizontalAlignment="Right"
+                              Style="{StaticResource MiniSwitch}" Click="OnAutoStartClick" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

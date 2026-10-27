@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    目标 .NET Framework 4.8:Windows 10 1903+ / Windows 11 系统自带,
+    无需安装运行时,也不用把 .NET 8 整个打包进 exe(那样单文件约 150 MB)。
+    零 NuGet 依赖(MQTT 与 JSON 都是内置的精简实现),产物就是一个 ~100 KB 的 exe。
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MechrevoWidget</RootNamespace>
+    <AssemblyName>MechrevoWidget</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 允许在非 Windows 上编译(CI / Linux) -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Version>1.0.0</Version>
+    <Product>MechrevoWidget</Product>
+    <Description>机械革命笔记本任务栏性能档位 / 温度小组件</Description>
+  </PropertyGroup>
+</Project>

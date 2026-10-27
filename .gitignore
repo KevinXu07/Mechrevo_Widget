@@ -1,0 +1,21 @@
+# 构建产物
+bin/
+obj/
+dist/
+*.exe
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# 本地私有资料(不公开)
+_private/
+.claude/
+
+# Python
+__pycache__/
+*.pyc
