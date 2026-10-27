@@ -1,4 +1,4 @@
-# mechrevo-adjust
+# mechrevo-widget
 
 你是否也合盖立放笔记本，按不到性能调节按键，又觉得打开控制中心太卡？
 
